@@ -326,6 +326,8 @@ function weekEnd(off = weekOff) {
 function weekKey(off = weekOff) {
   return 'week_' + weekStart(off).toISOString().slice(0,10);
 }
+// Clave local con prefijo propio: los tableros comparten dominio (github.io) y por ende localStorage
+function storeKey(off = weekOff) { return 'mkt_' + weekKey(off); }
 function fmtDate(d) { return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}); }
 function fmtShort(d) { return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'}); }
 // Parsea 'YYYY-MM-DD' como medianoche LOCAL (new Date('YYYY-MM-DD') sería UTC y corre un día)
@@ -345,7 +347,7 @@ function setSyncState(state) {
 async function fetchTasks() {
   if (!API_URL || API_URL === 'TU_URL_DE_APPS_SCRIPT_AQUI') {
     setSyncState('ok');
-    return JSON.parse(localStorage.getItem(weekKey()) || '[]');
+    return JSON.parse(localStorage.getItem(storeKey()) || '[]');
   }
   setSyncState('loading');
   try {
@@ -356,7 +358,7 @@ async function fetchTasks() {
     return remote;
   } catch(e) {
     setSyncState('err');
-    const local = JSON.parse(localStorage.getItem(weekKey()) || '[]');
+    const local = JSON.parse(localStorage.getItem(storeKey()) || '[]');
     return local;
   }
 }
@@ -365,26 +367,26 @@ async function apiPost(body) {
   if (!API_URL || API_URL === 'TU_URL_DE_APPS_SCRIPT_AQUI') {
     // Demo mode — guardar solo en localStorage
     if (body.action === 'saveTask') {
-      let tasks = JSON.parse(localStorage.getItem(weekKey()) || '[]');
+      let tasks = JSON.parse(localStorage.getItem(storeKey()) || '[]');
       const idx = tasks.findIndex(t => t.id === body.task.id);
       if (idx >= 0) tasks[idx] = body.task; else tasks.push(body.task);
-      localStorage.setItem(weekKey(), JSON.stringify(tasks));
+      localStorage.setItem(storeKey(), JSON.stringify(tasks));
     }
     if (body.action === 'toggleTask') {
-      let tasks = JSON.parse(localStorage.getItem(weekKey()) || '[]');
+      let tasks = JSON.parse(localStorage.getItem(storeKey()) || '[]');
       const t = tasks.find(t => t.id === body.id);
       if (t) { t.done = body.done; t.doneBy = body.doneBy; t.doneAt = body.doneAt; }
-      localStorage.setItem(weekKey(), JSON.stringify(tasks));
+      localStorage.setItem(storeKey(), JSON.stringify(tasks));
     }
     if (body.action === 'deleteTask') {
-      let tasks = JSON.parse(localStorage.getItem(weekKey()) || '[]').filter(t => t.id !== body.id);
-      localStorage.setItem(weekKey(), JSON.stringify(tasks));
+      let tasks = JSON.parse(localStorage.getItem(storeKey()) || '[]').filter(t => t.id !== body.id);
+      localStorage.setItem(storeKey(), JSON.stringify(tasks));
     }
     if (body.action === 'addNote') {
-      let tasks = JSON.parse(localStorage.getItem(weekKey()) || '[]');
+      let tasks = JSON.parse(localStorage.getItem(storeKey()) || '[]');
       const t = tasks.find(t => t.id === body.id);
       if (t) { const prev = t.notes ? t.notes + ' | ' : ''; t.notes = prev + `[${body.personName}]: ${body.note}`; }
-      localStorage.setItem(weekKey(), JSON.stringify(tasks));
+      localStorage.setItem(storeKey(), JSON.stringify(tasks));
     }
     return { ok: true };
   }
@@ -407,7 +409,7 @@ async function apiPost(body) {
 }
 
 function saveLocalCache(t) {
-  localStorage.setItem(weekKey(), JSON.stringify(t));
+  localStorage.setItem(storeKey(), JSON.stringify(t));
 }
 
 async function loadAndRender() {
@@ -813,7 +815,7 @@ function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').repla
 
 function chWeek(d){
   weekOff+=d; updateWeekLabel();
-  tasks=JSON.parse(localStorage.getItem(weekKey())||'[]');
+  tasks=JSON.parse(localStorage.getItem(storeKey())||'[]');
   renderAll(); loadAndRender();
 }
 function selectArea(id){ curArea=id; curPersonFilter=null; curView='area'; renderAll(); }
